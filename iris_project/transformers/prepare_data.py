@@ -23,7 +23,7 @@ def transform(df, *args, **kwargs):
     Transforms the 150-row Iris dataset by splitting it 80/20 into train/test sets,
     attaching a 'split' indicator column to each partition.
     """
-    train_df, test_df = train_test_split(df, test_size=0.2, random_state=42)
+    train_df, test_df = train_test_split(df, test_size=0.3, random_state=42)
 
     train_df = train_df.copy()
     test_df = test_df.copy()
