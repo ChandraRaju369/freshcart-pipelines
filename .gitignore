@@ -31,3 +31,5 @@ Thumbs.db
 .idea/
 .vscode/
 *.swp
+
+iris_project/io_config.yaml

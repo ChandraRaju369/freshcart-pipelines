@@ -1,51 +1,46 @@
-import joblib
+
+import pandas as pd
 from sklearn.tree import DecisionTreeClassifier
+from sklearn.metrics import accuracy_score
 
-# Import Mage's decorators only if they aren't already loaded
 if 'transformer' not in globals():
-    try:
-        from mage_ai.data_preparation.decorators import transformer
-    except ImportError:
-        def transformer(func):
-            return func
-
+    from mage_ai.data_preparation.decorators import transformer
 if 'test' not in globals():
-    try:
-        from mage_ai.data_preparation.decorators import test
-    except ImportError:
-        def test(func):
-            return func
-
-FEATURES = ['sepal length (cm)', 'sepal width (cm)',
-            'petal length (cm)', 'petal width (cm)']
+    from mage_ai.data_preparation.decorators import test
 
 
 @transformer
-def train(df, *args, **kwargs):
-    """
-    Transformer: Trains a DecisionTreeClassifier using max_depth parameter from kwargs.
-    Evaluates on test split and serializes model artifact.
-    """
+def train_model(data, **kwargs):
+    X_train, X_test, y_train, y_test = data
+
     max_depth = int(kwargs.get('max_depth', 3))
 
-    train_df = df[df['split'] == 'train']
-    test_df = df[df['split'] == 'test'].copy()
+    model = DecisionTreeClassifier(
+        max_depth=max_depth,
+        random_state=42
+    )
 
-    model = DecisionTreeClassifier(max_depth=max_depth, random_state=42)
-    model.fit(train_df[FEATURES], train_df['target'])
+    model.fit(X_train, y_train)
 
-    test_df['predicted'] = model.predict(test_df[FEATURES])
-    accuracy = (test_df['predicted'] == test_df['target']).mean()
-    print('max_depth =', max_depth, '| Test accuracy =', round(accuracy, 3))
+    predictions = model.predict(X_test)
+    accuracy = accuracy_score(y_test, predictions)
 
-    joblib.dump(model, 'iris_model.pkl')
-    return test_df
+    print(f"max_depth: {max_depth}")
+    print(f"test_accuracy: {accuracy:.4f}")
 
+    results = pd.DataFrame({
+        'actual': y_test.to_numpy(),
+        'predicted': predictions,
+        'accuracy': accuracy
+    })
+
+    return results
 
 @test
-def test_accuracy(output, *args):
-    """
-    Quality gate test: asserts test accuracy is at least 80% (0.8).
-    """
-    accuracy = (output['predicted'] == output['target']).mean()
-    assert accuracy >= 0.8, 'Model accuracy is below 80%'
+def test_output(df) -> None:
+    assert df is not None
+    assert len(df) == 30
+    assert 'actual' in df.columns
+    assert 'predicted' in df.columns
+    assert df['accuracy'].between(0, 1).all()
+    assert df['accuracy'].iloc[0] >= 0.90

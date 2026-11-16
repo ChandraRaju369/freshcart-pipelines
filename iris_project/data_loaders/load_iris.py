@@ -1,36 +1,27 @@
-import pandas as pd
+
 from sklearn.datasets import load_iris
+from pandas import DataFrame
 
-# Import Mage's decorators only if they aren't already loaded
 if 'data_loader' not in globals():
-    try:
-        from mage_ai.data_preparation.decorators import data_loader
-    except ImportError:
-        def data_loader(func):
-            return func
-
+    from mage_ai.data_preparation.decorators import data_loader
 if 'test' not in globals():
-    try:
-        from mage_ai.data_preparation.decorators import test
-    except ImportError:
-        def test(func):
-            return func
+    from mage_ai.data_preparation.decorators import test
 
 
 @data_loader
-def load_data(*args, **kwargs):
+def load_iris_data(**kwargs) -> DataFrame:
     """
-    Data Loader: Loads the built-in Iris dataset from scikit-learn as a pandas DataFrame.
+    Load the Iris dataset from scikit-learn.
     """
     iris = load_iris(as_frame=True)
-    df = iris.frame                      # 4 feature columns + 'target'
-    print('Rows loaded:', len(df))
+    df = iris.frame
+
     return df
 
 
 @test
-def test_output(output, *args):
-    """
-    Quality test: verifies exactly 150 records exist in Iris dataset.
-    """
-    assert len(output) == 150, 'Iris must have 150 rows'
+def test_output(df) -> None:
+    assert df is not None
+    assert len(df) == 150, 'Iris dataset should contain 150 rows'
+    assert 'target' in df.columns, 'Target column is missing'
+    assert df['target'].nunique() == 3, 'Expected 3 target classes'
